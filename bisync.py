@@ -1,5 +1,14 @@
 #! /usr/bin/python
 
+"""
+
+TODO:
+ - implement conflict resolution
+ - implement confirmations
+ - think again about version merging
+
+"""
+
 import argparse
 import os
 import os.path
