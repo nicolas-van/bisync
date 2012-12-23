@@ -11,7 +11,7 @@ BISYNC_FOLDER = ".bisync"
 BISYNC_INDEX = os.path.join(BISYNC_FOLDER, "index")
 BISYNC_SUFFIX = "~bisync"
 
-bisync_folder_re = re.compile(r"""^\.bisync\/.*$""")
+bisync_exclude_re = re.compile(r"""(^\.bisync\/.*$)|(^.*\~bisync$)""")
 
 class Source:
     def walk(self):
@@ -38,6 +38,8 @@ class Source:
     def copy_to(self, local_file, dest_file):
         """ Copy a local file (can be accessed using the filesystem) to a file on the source.
         If the file is contained in a folder or subfolder, all those folders must be implicitly created.
+        The last modification time of the destination file should be set to the same of the one
+        in the local file.
         """
         pass
 
@@ -82,6 +84,8 @@ class FileSystemSource(Source):
     def copy_to(self, local_file, dest_file):
         self._ensure_dir(os.path.join(self.path, dest_file))
         shutil.copy(local_file, os.path.join(self.path, dest_file))
+        stat = os.stat(local_file)
+        os.utime(os.path.join(self.path, dest_file), (stat.st_atime, stat.st_mtime))
 
     def rename(self, from_, to):
         shutil.move(os.path.join(self.path, from_), os.path.join(self.path, to))
@@ -95,29 +99,32 @@ class FileSystemSource(Source):
 
 class FileSystemSimulationSource(FileSystemSource):
     def write_memory(self, path, content):
-        pass
+        if not path.startswith(BISYNC_FOLDER):
+            print "Writing index to %s" % os.path.join(self.path, path)
 
     def copy_to(self, local_file, dest_file):
         print "Copy %s to %s" % (local_file,
             os.path.join(self.path, dest_file))
 
     def rename(self, from_, to):
-        print "Rename %s to %s" % (os.path.join(self.path, from_), os.path.join(self.path, to))
+        if not to.startswith(BISYNC_FOLDER):
+            print "Rename %s to %s" % (os.path.join(self.path, from_), os.path.join(self.path, to))
 
     def delete(self, path):
-        print "Delete %s" % os.path.join(self.path, path)
+        if not path.startswith(BISYNC_FOLDER):
+            print "Delete %s" % os.path.join(self.path, path)
 
 
 class Synchronizer:
     def synchronize_all(self, folders):
         for x in folders:
             self.build_index(x)
-        prev = None
+        for i in xrange(len(folders)):
+            for j in xrange(i, len(folders)):
+                self.sync(folders[i], folders[j])
+                self.sync(folders[j], folders[i])
         for x in folders:
-            if prev is not None:
-                self.sync(prev, x)
-                self.sync(x, prev)
-            prev = x
+            self.save_index(x)
 
     def sync(self, f1, f2):
         for file_ in f1.index:
@@ -199,13 +206,18 @@ class Synchronizer:
 
         source.index = p_index
 
-        json_ = json.dumps(p_index)
-        source.write_memory(BISYNC_INDEX, json_)
+        self.save_index(source)
+
+    def save_index(self, source):
+        json_ = json.dumps(source.index)
+        source.write_memory(BISYNC_INDEX + BISYNC_SUFFIX, json_)
+        source.delete(BISYNC_INDEX)
+        source.rename(BISYNC_INDEX + BISYNC_SUFFIX, BISYNC_INDEX)
 
     def build_current_index(self, source):
         index = {}
         for i in source.walk():
-            if not bisync_folder_re.match(i[0]):
+            if not bisync_exclude_re.match(i[0]):
                 index[i[0]] = i[1:]
         return index
         
