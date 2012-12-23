@@ -44,7 +44,7 @@ class Source:
         pass
 
     def rename(self, from_, to):
-        """ Rename a file. """
+        """ Rename a file. If the destination file exists, overwrite it."""
         pass
 
     def delete(self, path):
@@ -89,6 +89,7 @@ class FileSystemSource(Source):
         os.utime(os.path.join(self.path, dest_file), (stat.st_atime, stat.st_mtime))
 
     def rename(self, from_, to):
+        self.delete(to)
         shutil.move(os.path.join(self.path, from_), os.path.join(self.path, to))
 
     def delete(self, path):
@@ -104,20 +105,17 @@ class FileSystemSource(Source):
 
 class FileSystemSimulationSource(FileSystemSource):
     def write_memory(self, path, content):
-        if not path.startswith(BISYNC_FOLDER):
-            print "Writing index to %s" % os.path.join(self.path, path)
+        pass
 
     def copy_to(self, local_file, dest_file):
         print "Copy %s to %s" % (local_file,
-            os.path.join(self.path, dest_file))
+            os.path.join(self.path, dest_file[0:- len(BISYNC_SUFFIX)]))
 
     def rename(self, from_, to):
-        if not to.startswith(BISYNC_FOLDER):
-            print "Rename %s to %s" % (os.path.join(self.path, from_), os.path.join(self.path, to))
+        pass
 
     def delete(self, path):
-        if not path.startswith(BISYNC_FOLDER):
-            print "Delete %s" % os.path.join(self.path, path)
+        print "Delete %s" % os.path.join(self.path, path)
 
 
 class Synchronizer:
@@ -165,7 +163,6 @@ class Synchronizer:
         else: # file to copy
             tmp = path + BISYNC_SUFFIX
             source_to.copy_to(source_from.get_local_name(path), tmp)
-            source_to.delete(path)
             source_to.rename(tmp, path)
 
         # merge versions
@@ -216,7 +213,6 @@ class Synchronizer:
     def save_index(self, source):
         json_ = json.dumps(source.index)
         source.write_memory(BISYNC_INDEX + BISYNC_SUFFIX, json_)
-        source.delete(BISYNC_INDEX)
         source.rename(BISYNC_INDEX + BISYNC_SUFFIX, BISYNC_INDEX)
 
     def build_current_index(self, source):
