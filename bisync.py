@@ -5,9 +5,11 @@ import os
 import os.path
 import re
 import json
+import shutil
 
 BISYNC_FOLDER = ".bisync"
 BISYNC_INDEX = os.path.join(BISYNC_FOLDER, "index")
+BISYNC_SUFFIX = "~bisync"
 
 bisync_folder_re = re.compile(r"""^\.bisync\/.*$""")
 
@@ -19,6 +21,35 @@ class Source:
         - Time of last modification in unix format (integer)
         """
         pass
+
+    def exists(self, path):
+        """ Returns True if the file exists. """
+        pass
+
+    def read_memory(self, path):
+        """ Returns the content of the file in a string. """
+        pass
+
+    def write_memory(self, path, content):
+        """ Write content (as a string) to a file. If the file is contained in a folder or subfolder,
+        all those folders must be implicitly created. """
+        pass
+
+    def copy_to(self, local_file, dest_file):
+        """ Copy a local file (can be accessed using the filesystem) to a file on the source.
+        If the file is contained in a folder or subfolder, all those folders must be implicitly created.
+        """
+        pass
+
+    def rename(self, from_, to):
+        """ Rename a file. """
+        pass
+
+    def delete(self, path):
+        """ Delete a file. If the file does not exists, this method should do nothing."""
+        pass
+
+
 
 class FileSystemSource(Source):
     def __init__(self, path):
@@ -48,14 +79,104 @@ class FileSystemSource(Source):
         if not os.path.exists(dir_):
             os.makedirs(dir_)
 
+    def copy_to(self, local_file, dest_file):
+        self._ensure_dir(os.path.join(self.path, dest_file))
+        shutil.copy(local_file, os.path.join(self.path, dest_file))
+
+    def rename(self, from_, to):
+        shutil.move(os.path.join(self.path, from_), os.path.join(self.path, to))
+
+    def delete(self, path):
+        if os.path.exists(os.path.join(self.path, path)):
+            os.remove(os.path.join(self.path, path))
+
+    def get_local_name(self, path):
+        return os.path.join(self.path, path)
+
+class FileSystemSimulationSource(FileSystemSource):
+    def write_memory(self, path, content):
+        pass
+
+    def copy_to(self, local_file, dest_file):
+        print "Copy %s to %s" % (local_file,
+            os.path.join(self.path, dest_file))
+
+    def rename(self, from_, to):
+        print "Rename %s to %s" % (os.path.join(self.path, from_), os.path.join(self.path, to))
+
+    def delete(self, path):
+        print "Delete %s" % os.path.join(self.path, path)
+
 
 class Synchronizer:
-    def __init__(self, folders):
-        self.folders = folders
-
-    def synchronize(self):
-        for x in self.folders:
+    def synchronize_all(self, folders):
+        for x in folders:
             self.build_index(x)
+        prev = None
+        for x in folders:
+            if prev is not None:
+                self.sync(prev, x)
+                self.sync(x, prev)
+            prev = x
+
+    def sync(self, f1, f2):
+        for file_ in f1.index:
+            if file_ not in f2.index: # file unknown to f2
+                self.transfer(f1, f2, file_)
+            else:
+                versions1 = f1.index[file_]
+                versions2 = f2.index[file_]
+                last_common = None
+                for i in xrange(min(len(versions1), len(versions2))):
+                    if versions1[i] != versions2[i]:
+                        break
+                    last_common = i
+                if last_common == len(versions1) - 1 and last_common == len(versions2) - 1: # nothing to do
+                    continue
+                elif last_common == len(versions1) - 1: # file in f1 is older
+                    self.transfer(f1, f2, file_)
+                elif last_common == len(versions2) - 1: # file in f2 is older
+                    self.transfer(f2, f1, file_)
+                else: # conflict
+                    result = self.resolve_conflict(f1, f2, file_)
+                    if result == 1:
+                        self.transfer(f1, f2, file_)
+                    else:
+                        self.transfer(f2, f1, file_)
+
+    def transfer(self, source_from, source_to, path):
+        versions1 = source_from.index[path]
+        versions2 = source_to.index.get(path, [])
+        if versions1[-1][0] == False: # file to delete
+            if len(versions2) != 0 and versions2[-1][0] == True:
+                source_to.delete(path)
+        else: # file to copy
+            tmp = path + BISYNC_SUFFIX
+            source_to.copy_to(source_from.get_local_name(path), tmp)
+            source_to.delete(path)
+            source_to.rename(tmp, path)
+
+        # merge versions
+        last_common = -1
+        for i in xrange(min(len(versions1), len(versions2))):
+            if versions1[i] != versions2[i]:
+                break
+            last_common = i
+        versions = versions2 + versions1[last_common + 1:]
+        source_from.index[path] = versions
+        source_to.index[path] = [] + versions
+
+    def resolve_conflict(self, f1, f2, file_):
+        versions1 = f1.index[file_]
+        versions2 = f2.index[file_]
+        if versions1[-1][0] == False:
+            return 2
+        elif versions2[-1][0] == False:
+            return 1
+        elif versions1[-1][2] > versions2[-1][2]:
+            return 1
+        else:
+            return 2
 
     def build_index(self, source):
         c_index = self.build_current_index(source)
@@ -79,7 +200,6 @@ class Synchronizer:
         source.index = p_index
 
         json_ = json.dumps(p_index)
-        print json_
         source.write_memory(BISYNC_INDEX, json_)
 
     def build_current_index(self, source):
@@ -94,10 +214,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Synchronize two folders.')
     parser.add_argument('folders', metavar='folders', type=str, nargs='+',
                        help='folders')
+    parser.add_argument("--simulation", help="Only output operations", action="store_true")
 
     args = parser.parse_args()
 
-    sync = Synchronizer([FileSystemSource(x) for x in args.folders])
+    sync = Synchronizer()
 
-    sync.synchronize()
+    if not args.simulation:
+        sources = [FileSystemSource(x) for x in args.folders]
+    else:
+        sources = [FileSystemSimulationSource(x) for x in args.folders]
+    sync.synchronize_all(sources)
 
