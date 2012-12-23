@@ -84,6 +84,21 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertEqual(s1.index, result)
         self.assertEqual(s2.index, result)
 
+    def test_recreated_file(self):
+        s1 = TestSource({
+            "file1": [[True, "1", "1"], [False]],
+        })
+        s2 = TestSource({
+            "file1": [[True, "1", "1"], [False], [True, "1", "4"]],
+        })
+        sync = bisync.Synchronizer()
+        sync.synchronize_all([s1, s2])
+        result = {
+            "file1": [[True, "1", "1"], [False], [True, "1", "4"]],
+        }
+        self.assertEqual(s1.index, result)
+        self.assertEqual(s2.index, result)
+
     def test_moved_file(self):
         s1 = TestSource({
             "file1": [[True, "1", "1"], [False]],
