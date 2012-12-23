@@ -48,7 +48,8 @@ class Source:
         pass
 
     def delete(self, path):
-        """ Delete a file. If the file does not exists, this method should do nothing."""
+        """ Delete a file. If the file does not exists, this method should do nothing.
+        After file has been deleted, if the containing folder is empty, the folder should be removed."""
         pass
 
 
@@ -93,6 +94,10 @@ class FileSystemSource(Source):
     def delete(self, path):
         if os.path.exists(os.path.join(self.path, path)):
             os.remove(os.path.join(self.path, path))
+        try:
+            os.removedirs(os.path.dirname(os.path.joind(self.path, path)))
+        except:
+            pass # do nothing
 
     def get_local_name(self, path):
         return os.path.join(self.path, path)
