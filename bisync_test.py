@@ -200,6 +200,10 @@ class TestSequenceFunctions(unittest.TestCase):
             "file1": [[True, "1", "1"], [True, "1", "2"]],
         }
         self.assertEqual(s1.index, result)
+        self.assertEqual(s1.nbr_copy, 0)
+        self.assertEqual(s2.nbr_copy, 0)
+        self.assertEqual(s1.nbr_delete, 0)
+        self.assertEqual(s2.nbr_delete, 0)
 
 if __name__ == '__main__':
     unittest.main()
