@@ -33,7 +33,7 @@ That makes it *a lot* faster and makes the additional disk usage insignificant. 
 history, which is a problem for code, not for mp3.
 
 ####Why is it better than Dropbox?
-Go check how much it cost to host 200G on Dropbox and you'll know.
+Go check how much it cost to host 200G on Dropbox and you'll know. Also, bisync is GPL.
 
 ###Changelog:
 - 0.8.0:
