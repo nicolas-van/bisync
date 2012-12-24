@@ -24,8 +24,8 @@ Because bisync is bidirectional and rsync can't track deletion, rename nor chang
 
 ####Why is it better than unison?
 Because unison is centralized, which mean you have to always use the same computer to make the synchronisation. I can't
-help but think it's super boring, because today a lot of people have more than 2 computers (desktop + laptop + tablet
-+ smartphone + working pc + grandma's pc, etc...).
+help but think it's super boring, because today a lot of people have more than 2 computers (desktop + laptop + tablet +
+smartphone + working pc + grandma's pc, etc...).
 
 ####Why is it better than git/mercurial?
 Because those are *real* DVCS, they keep a copy of each file versions, they create diffs, they compute hashs of files...
