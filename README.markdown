@@ -31,6 +31,9 @@ normaly occupied by the files. Bisync does not do that, it only checks files met
 That makes it *a lot* faster and makes the additional disk usage insignificant. Of course, you can't go back in
 history, which is a problem for code, not for mp3.
 
+####Why is it better than Dropbox?
+Go check how much it cost to host 200G on Dropbox and you'll know.
+
 ###Changelog:
 - 0.8.0:
   - First released version
