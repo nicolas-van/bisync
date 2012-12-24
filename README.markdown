@@ -10,7 +10,9 @@ It's also fully distributed, so you can sync your desktop with you laptop, then 
 tablet back to the desktop, etc...
 
 Of course it's not a safe as git or mercurial because it can't got back in history. But for large collections of files,
-like the typical case of a mp3 collection, it's hundred times faster and won't use twice the disk size.
+like the typical case of a mp3 collection, it's a hundred times faster and won't use twice the disk size.
+
+Currently it only support local folders sync, I plan to implement ssh as soon as I have time to do so.
 
 To test it:
 
