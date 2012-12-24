@@ -9,7 +9,8 @@ file rename, understand when a file was updated in a folder but not in an other,
 It's also fully distributed, so you can sync your desktop with you laptop, then the laptop to the tablet, then the
 tablet back to the desktop, etc...
 
-Currently it only supports local folders sync, I plan to implement ssh as soon as I have time to do so.
+Currently it only supports local folders sync, I plan to implement ssh as soon as I have time to do so. Although
+it will work with sshfs.
 
 To test it:
 
