@@ -28,7 +28,8 @@ Because unison is centralized.
 Because those are *real* DVCS, they keep a copy of each file versions, they create diffs, they compute hashs of files...
 All of that will take far too much time for a 200G mp3 collection and will take at least twice the disk size
 normaly occupied by the files. Bisync does not do that, it only checks files metadata and store them in its history.
-That makes it *a lot* faster and makes the additional disk usage insignificant.
+That makes it *a lot* faster and makes the additional disk usage insignificant. Of course, you can't go back in
+history, which is a problem for code, not for mp3.
 
 ###Changelog:
 - 0.8.0:
