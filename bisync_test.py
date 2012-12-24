@@ -5,6 +5,8 @@ import unittest
 class TestSource(bisync.Source):
     def __init__(self, index):
         self.test_index = index
+        self.nbr_copy = 0
+        self.nbr_delete = 0
 
     def walk(self):
         for file_ in self.test_index.keys():
@@ -27,13 +29,13 @@ class TestSource(bisync.Source):
         pass
 
     def copy_to(self, local_file, dest_file):
-        pass
+        self.nbr_copy += 1
 
     def rename(self, from_, to):
         pass
 
     def delete(self, path):
-        pass
+        self.nbr_delete += 1
 
     def get_local_name(self, path):
         return path
@@ -52,7 +54,10 @@ class TestSequenceFunctions(unittest.TestCase):
             "file1": [[True, "1", "1"]],
         }
         self.assertEqual(s1.index, result)
-        self.assertEqual(s2.index, result)
+        self.assertEqual(s1.nbr_copy, 0)
+        self.assertEqual(s2.nbr_copy, 1)
+        self.assertEqual(s1.nbr_delete, 0)
+        self.assertEqual(s2.nbr_delete, 0)
 
     def test_updated_version(self):
         s1 = TestSource({
@@ -67,7 +72,10 @@ class TestSequenceFunctions(unittest.TestCase):
             "file1": [[True, "1", "1"], [True, "1", "2"]],
         }
         self.assertEqual(s1.index, result)
-        self.assertEqual(s2.index, result)
+        self.assertEqual(s1.nbr_copy, 0)
+        self.assertEqual(s2.nbr_copy, 1)
+        self.assertEqual(s1.nbr_delete, 0)
+        self.assertEqual(s2.nbr_delete, 0)
 
     def test_deleted_file(self):
         s1 = TestSource({
@@ -82,7 +90,10 @@ class TestSequenceFunctions(unittest.TestCase):
             "file1": [[True, "1", "1"], [False]],
         }
         self.assertEqual(s1.index, result)
-        self.assertEqual(s2.index, result)
+        self.assertEqual(s1.nbr_copy, 0)
+        self.assertEqual(s2.nbr_copy, 0)
+        self.assertEqual(s1.nbr_delete, 0)
+        self.assertEqual(s2.nbr_delete, 1)
 
     def test_recreated_file(self):
         s1 = TestSource({
@@ -97,7 +108,10 @@ class TestSequenceFunctions(unittest.TestCase):
             "file1": [[True, "1", "1"], [False], [True, "1", "4"]],
         }
         self.assertEqual(s1.index, result)
-        self.assertEqual(s2.index, result)
+        self.assertEqual(s1.nbr_copy, 1)
+        self.assertEqual(s2.nbr_copy, 0)
+        self.assertEqual(s1.nbr_delete, 0)
+        self.assertEqual(s2.nbr_delete, 0)
 
     def test_moved_file(self):
         s1 = TestSource({
@@ -114,7 +128,10 @@ class TestSequenceFunctions(unittest.TestCase):
             "file2": [[True, "1", "1"]],
         }
         self.assertEqual(s1.index, result)
-        self.assertEqual(s2.index, result)
+        self.assertEqual(s1.nbr_copy, 0)
+        self.assertEqual(s2.nbr_copy, 1)
+        self.assertEqual(s1.nbr_delete, 0)
+        self.assertEqual(s2.nbr_delete, 1)
 
     def test_conflict(self):
         s1 = TestSource({
@@ -129,7 +146,10 @@ class TestSequenceFunctions(unittest.TestCase):
             "file1": [[True, "1", "1"], [True, "1", "2"], [True, "1", "3"]],
         }
         self.assertEqual(s1.index, result)
-        self.assertEqual(s1.index, result)
+        self.assertEqual(s1.nbr_copy, 0)
+        self.assertEqual(s2.nbr_copy, 1)
+        self.assertEqual(s1.nbr_delete, 0)
+        self.assertEqual(s2.nbr_delete, 0)
 
     def test_conflict_one_delete(self):
         s1 = TestSource({
@@ -144,7 +164,10 @@ class TestSequenceFunctions(unittest.TestCase):
             "file1": [[True, "1", "1"], [True, "1", "3"], [False], [True, "1", "2"]],
         }
         self.assertEqual(s1.index, result)
-        self.assertEqual(s1.index, result)
+        self.assertEqual(s1.nbr_copy, 1)
+        self.assertEqual(s2.nbr_copy, 0)
+        self.assertEqual(s1.nbr_delete, 0)
+        self.assertEqual(s2.nbr_delete, 0)
 
     def test_conflict_two_delete(self):
         s1 = TestSource({
@@ -156,9 +179,26 @@ class TestSequenceFunctions(unittest.TestCase):
         sync = bisync.Synchronizer()
         sync.synchronize_all([s1, s2])
         result = {
-            "file1": [[True, "1", "1"], [True, "1", "3"], [False], [True, "1", "2"], [False]],
+            "file1": [[True, "1", "1"], [True, "1", "2"], [True, "1", "3"], [False]],
         }
         self.assertEqual(s1.index, result)
+        self.assertEqual(s1.nbr_copy, 0)
+        self.assertEqual(s2.nbr_copy, 0)
+        self.assertEqual(s1.nbr_delete, 0)
+        self.assertEqual(s2.nbr_delete, 0)
+
+    def test_external_copy(self):
+        s1 = TestSource({
+            "file1": [[True, "1", "1"], [True, "1", "2"]],
+        })
+        s2 = TestSource({
+            "file1": [[True, "1", "2"]],
+        })
+        sync = bisync.Synchronizer()
+        sync.synchronize_all([s1, s2])
+        result = {
+            "file1": [[True, "1", "1"], [True, "1", "2"]],
+        }
         self.assertEqual(s1.index, result)
 
 if __name__ == '__main__':

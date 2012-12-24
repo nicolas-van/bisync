@@ -145,17 +145,26 @@ class Synchronizer:
             else:
                 versions1 = f1.index[file_]
                 versions2 = f2.index[file_]
-                last_common = None
-                for i in xrange(min(len(versions1), len(versions2))):
-                    if versions1[i] != versions2[i]:
-                        break
-                    last_common = i
-                if last_common == len(versions1) - 1 and last_common == len(versions2) - 1: # nothing to do
+
+                if versions1[-1] == versions2[-1]: # files are the same, nothing to transfer
+                    self.merge_versions(f1, f2, file_)
                     continue
-                elif last_common == len(versions1) - 1: # file in f1 is older
-                    self.transfer(f1, f2, file_)
-                elif last_common == len(versions2) - 1: # file in f2 is older
+
+                # need to find last revision in common
+                i = len(versions1) - 1
+                j = len(versions2) - 1
+                while j >= 0:
+                    if versions1[i] == versions2[j]:
+                        break
+                    i -= 1
+                    if i == -1:
+                        i = len(versions1) - 1
+                        j -= 1
+
+                if i == len(versions1) - 1: # file in f1 is older
                     self.transfer(f2, f1, file_)
+                elif j == len(versions2) - 1: # file in f2 is older
+                    self.transfer(f1, f2, file_)
                 else: # conflict
                     result = self.resolve_conflict(f1, f2, file_)
                     if result == 1:
@@ -174,15 +183,36 @@ class Synchronizer:
             source_to.copy_to(source_from.get_local_name(path), tmp)
             source_to.rename(tmp, path)
 
-        # merge versions
-        last_common = -1
-        for i in xrange(min(len(versions1), len(versions2))):
-            if versions1[i] != versions2[i]:
-                break
-            last_common = i
-        versions = versions2 + versions1[last_common + 1:]
-        source_from.index[path] = versions
-        source_to.index[path] = [] + versions
+        self.merge_versions(source_from, source_to, path)
+
+    def merge_versions(self, source_from, source_to, path):
+        # in case of conflict, versions on top of source_from
+        # will appear on top of the resulting list
+        versions1 = source_from.index[path]
+        versions2 = source_to.index.get(path, [])
+        last_common_i = -1
+        last_common_j = -1
+        i = 0
+        j = 0
+        n_versions = []
+        while j < len(versions2):
+            if versions1[i] == versions2[j]:
+                n_versions += versions2[last_common_j + 1:j]
+                n_versions += versions1[last_common_i + 1:i]
+                n_versions.append(versions1[i])
+                last_common_i = i
+                last_common_j = j
+                i += 1
+                j += 1
+                continue
+            i += 1
+            if i == len(versions1):
+                i = last_common_i + 1
+                j += 1
+        n_versions += versions2[last_common_j + 1:]
+        n_versions += versions1[last_common_i + 1:]
+        source_from.index[path] = n_versions
+        source_to.index[path] = [] + n_versions
 
     def resolve_conflict(self, f1, f2, file_):
         versions1 = f1.index[file_]
