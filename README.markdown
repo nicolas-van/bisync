@@ -9,9 +9,6 @@ file rename, understand when a file was updated in a folder but not in an other,
 It's also fully distributed, so you can sync your desktop with you laptop, then the laptop to the tablet, then the
 tablet back to the desktop, etc...
 
-Of course it's not a safe as git or mercurial because it can't got back in history. But for large collections of files,
-like the typical case of a mp3 collection, it's a hundred times faster and won't use twice the disk size.
-
 Currently it only supports local folders sync, I plan to implement ssh as soon as I have time to do so.
 
 To test it:
@@ -19,6 +16,19 @@ To test it:
     sudo pip install bisync
     bisync folder1 folder2
 
+For the upcoming questions:
+
+####Why is it better than rsync?
+Because it's bidirectional.
+
+####Why is it better than unison?
+Because unison is centralized.
+
+####Why is it better than git/mercurial?
+Because those are *real* DVCS, they keep a copy of each file versions, they create diffs, they compute hashs of files...
+All of that will take far too much time for a 200G mp3 collection and will take at least twice the disk size
+normaly occupied by the files. Bisync does not do that, it only checks files metadata and store them in its history.
+That makes it *a lot* faster and makes the additional disk usage insignificant.
 
 ###Changelog:
 - 0.8.0:
