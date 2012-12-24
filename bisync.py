@@ -4,6 +4,7 @@
 
 TODO:
  - optimise sync
+ - add trash
 
 """
 
@@ -140,7 +141,6 @@ class Synchronizer(object):
         for i in xrange(len(folders)):
             for j in xrange(i, len(folders)):
                 self.sync(folders[i], folders[j])
-                self.sync(folders[j], folders[i])
         for x in folders:
             self.save_index(x)
 
@@ -153,7 +153,7 @@ class Synchronizer(object):
                 versions2 = f2.index[file_]
 
                 if versions1[-1] == versions2[-1]: # files are the same, nothing to transfer
-                    self.merge_versions(f1, f2, file_)
+                    self.merge_versions(f1, f2, file_) # but we merge versions anyway
                     continue
 
                 # need to find last revision in common
@@ -177,6 +177,10 @@ class Synchronizer(object):
                         self.transfer(f1, f2, file_)
                     else:
                         self.transfer(f2, f1, file_)
+
+        for file_ in f2.index:
+            if file_ not in f1.index: # file unknown to f1
+                self.transfer(f2, f1, file_)
 
     def transfer(self, source_from, source_to, path):
         versions1 = source_from.index[path]
