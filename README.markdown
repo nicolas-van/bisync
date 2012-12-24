@@ -6,8 +6,8 @@ A distributed bidirectional folder synchronizer.
 I created this program mainly to handle a large music collection, but it could also be useful for lot of other uses.
 Basically, it keeps an history of file versions in each separate folders, which allows it to detect file deletion,
 file rename, understand when a file was updated in a folder but not in an other, detect conflicting modifications, etc...
-It's also fully distributed, so you can sync your desktop with you laptop, then the laptop to the tablet, then the
-tablet back to the desktop, etc...
+It's also fully distributed, so you can sync your desktop with your laptop, then your laptop with your tablet, then your
+tablet back with your desktop, etc...
 
 Currently it only supports local folders sync, I plan to implement ssh as soon as I have time to do so. Although
 it will work with sshfs.
@@ -33,7 +33,6 @@ That makes it *a lot* faster and makes the additional disk usage insignificant. 
 history, which is a problem for code, not for mp3.
 
 ####Why is it better than Dropbox?
-Go check how much it cost to host 200G on Dropbox and you'll know. Also, bisync is GPL.
 
 ###Changelog:
 - 0.8.0:
