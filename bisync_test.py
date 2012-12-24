@@ -48,7 +48,7 @@ class TestSequenceFunctions(unittest.TestCase):
         })
         s2 = TestSource({
         })
-        sync = bisync.Synchronizer()
+        sync = bisync.Synchronizer(no_trash=True)
         sync.synchronize_all([s1, s2])
         result = {
             "file1": [[True, "1", "1"]],
@@ -66,7 +66,7 @@ class TestSequenceFunctions(unittest.TestCase):
         s2 = TestSource({
             "file1": [[True, "1", "1"]],
         })
-        sync = bisync.Synchronizer()
+        sync = bisync.Synchronizer(no_trash=True)
         sync.synchronize_all([s1, s2])
         result = {
             "file1": [[True, "1", "1"], [True, "1", "2"]],
@@ -84,7 +84,7 @@ class TestSequenceFunctions(unittest.TestCase):
         s2 = TestSource({
             "file1": [[True, "1", "1"]],
         })
-        sync = bisync.Synchronizer()
+        sync = bisync.Synchronizer(no_trash=True)
         sync.synchronize_all([s1, s2])
         result = {
             "file1": [[True, "1", "1"], [False]],
@@ -102,7 +102,7 @@ class TestSequenceFunctions(unittest.TestCase):
         s2 = TestSource({
             "file1": [[True, "1", "1"], [False], [True, "1", "4"]],
         })
-        sync = bisync.Synchronizer()
+        sync = bisync.Synchronizer(no_trash=True)
         sync.synchronize_all([s1, s2])
         result = {
             "file1": [[True, "1", "1"], [False], [True, "1", "4"]],
@@ -121,7 +121,7 @@ class TestSequenceFunctions(unittest.TestCase):
         s2 = TestSource({
             "file1": [[True, "1", "1"]],
         })
-        sync = bisync.Synchronizer()
+        sync = bisync.Synchronizer(no_trash=True)
         sync.synchronize_all([s1, s2])
         result = {
             "file1": [[True, "1", "1"], [False]],
@@ -140,7 +140,7 @@ class TestSequenceFunctions(unittest.TestCase):
         s2 = TestSource({
             "file1": [[True, "1", "1"], [True, "1", "2"]],
         })
-        sync = bisync.Synchronizer()
+        sync = bisync.Synchronizer(no_trash=True)
         sync.synchronize_all([s1, s2])
         result = {
             "file1": [[True, "1", "1"], [True, "1", "2"], [True, "1", "3"]],
@@ -158,7 +158,7 @@ class TestSequenceFunctions(unittest.TestCase):
         s2 = TestSource({
             "file1": [[True, "1", "1"], [True, "1", "2"]],
         })
-        sync = bisync.Synchronizer()
+        sync = bisync.Synchronizer(no_trash=True)
         sync.synchronize_all([s1, s2])
         result = {
             "file1": [[True, "1", "1"], [True, "1", "3"], [False], [True, "1", "2"]],
@@ -176,7 +176,7 @@ class TestSequenceFunctions(unittest.TestCase):
         s2 = TestSource({
             "file1": [[True, "1", "1"], [True, "1", "2"], [False]],
         })
-        sync = bisync.Synchronizer()
+        sync = bisync.Synchronizer(no_trash=True)
         sync.synchronize_all([s1, s2])
         result = {
             "file1": [[True, "1", "1"], [True, "1", "2"], [True, "1", "3"], [False]],
@@ -194,7 +194,7 @@ class TestSequenceFunctions(unittest.TestCase):
         s2 = TestSource({
             "file1": [[True, "1", "2"]],
         })
-        sync = bisync.Synchronizer()
+        sync = bisync.Synchronizer(no_trash=True)
         sync.synchronize_all([s1, s2])
         result = {
             "file1": [[True, "1", "1"], [True, "1", "2"]],

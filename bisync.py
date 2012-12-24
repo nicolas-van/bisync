@@ -3,8 +3,8 @@
 """
 
 TODO:
- - optimise sync
- - add trash
+ - add lock ?
+ - add ignore ?
 
 """
 
@@ -19,8 +19,9 @@ import datetime
 BISYNC_FOLDER = ".bisync"
 BISYNC_INDEX = os.path.join(BISYNC_FOLDER, "index")
 BISYNC_SUFFIX = "~bisync"
+BISYNC_TRASH = "bisync_trash"
 
-bisync_exclude_re = re.compile(r"""(^\.bisync\/.*$)|(^.*\~bisync$)""")
+bisync_exclude_re = re.compile(r"""(^\.bisync\/.*$)|(^.*\~bisync$)|(^bisync_trash\/.*$)""")
 
 class Source(object):
     def get_name(self):
@@ -57,7 +58,8 @@ class Source(object):
         pass
 
     def rename(self, from_, to):
-        """ Rename a file. If the destination file exists, overwrite it."""
+        """ Rename a file. If the destination file exists, overwrite it. If the destination file is
+        in a folder that does not exists, that folder must be implicitly created. """
         pass
 
     def delete(self, path):
@@ -106,6 +108,7 @@ class FileSystemSource(Source):
 
     def rename(self, from_, to):
         self.delete(to)
+        self._ensure_dir(os.path.join(self.path, to))
         shutil.move(os.path.join(self.path, from_), os.path.join(self.path, to))
 
     def delete(self, path):
@@ -133,8 +136,10 @@ class FileSystemSimulationSource(FileSystemSource):
     def delete(self, path):
         print "Delete %s" % os.path.join(self.path, path)
 
-
 class Synchronizer(object):
+    def __init__(self, no_trash=False):
+        self.no_trash = no_trash
+
     def synchronize_all(self, folders):
         for x in folders:
             self.build_index(x)
@@ -189,7 +194,10 @@ class Synchronizer(object):
             if len(versions2) != 0 and versions2[-1][0] == True:
                 if not self.confirm_delete(source_from, source_to, path):
                     return
-                source_to.delete(path)
+                if self.no_trash:
+                    source_to.delete(path)
+                else:
+                    source_to.rename(path, os.path.join(BISYNC_TRASH, path))
         else: # file to copy
             if len(versions2) == 0 or versions2[-1] == [False]:
                 if not self.confirm_copy(source_from, source_to, path):
@@ -290,7 +298,8 @@ class Synchronizer(object):
         return index
         
 class CmdSynchronizer(Synchronizer):
-    def __init__(self, args):
+    def __init__(self, cmd_args, **kwargs):
+        super(CmdSynchronizer, self).__init__(**kwargs)
         self.args = args
 
     def get_file_desc(self, source, path):
@@ -361,12 +370,16 @@ if __name__ == "__main__":
     parser.add_argument("-a", "--auto", help="Does not confirm file transfers", action="store_true")
     parser.add_argument("-f", "--full-auto", help="Does not confirm file transfers" +
         " and resolve conflicts automatically", action="store_true")
+    parser.add_argument("-t", "--no-trash", help="Deletes files instead of sending them to a trash" +
+        " folder", action="store_true")
 
     args = parser.parse_args()
     if args.full_auto:
         args.auto = True
+    if args.simulation:
+        args.no_trash = True
 
-    sync = CmdSynchronizer(args)
+    sync = CmdSynchronizer(args, no_trash=args.no_trash)
 
     if not args.simulation:
         sources = [FileSystemSource(x) for x in args.folders]
