@@ -3,9 +3,7 @@
 """
 
 TODO:
- - implement conflict resolution
- - implement confirmations
- - think again about version merging
+ - optimise sync
 
 """
 
@@ -15,6 +13,7 @@ import os.path
 import re
 import json
 import shutil
+import datetime
 
 BISYNC_FOLDER = ".bisync"
 BISYNC_INDEX = os.path.join(BISYNC_FOLDER, "index")
@@ -22,7 +21,11 @@ BISYNC_SUFFIX = "~bisync"
 
 bisync_exclude_re = re.compile(r"""(^\.bisync\/.*$)|(^.*\~bisync$)""")
 
-class Source:
+class Source(object):
+    def get_name(self):
+        """ Returns the string used to construct the source. """
+        pass
+
     def walk(self):
         """ Returns an iterator returning tuples in the following format:
         - Path of the file relative to the root folder of the source
@@ -66,6 +69,9 @@ class Source:
 class FileSystemSource(Source):
     def __init__(self, path):
         self.path = path
+
+    def get_name(self):
+        return self.path
 
     def walk(self):
         for folder in os.walk(self.path):
@@ -127,7 +133,7 @@ class FileSystemSimulationSource(FileSystemSource):
         print "Delete %s" % os.path.join(self.path, path)
 
 
-class Synchronizer:
+class Synchronizer(object):
     def synchronize_all(self, folders):
         for x in folders:
             self.build_index(x)
@@ -177,13 +183,30 @@ class Synchronizer:
         versions2 = source_to.index.get(path, [])
         if versions1[-1][0] == False: # file to delete
             if len(versions2) != 0 and versions2[-1][0] == True:
+                if not self.confirm_delete(source_from, source_to, path):
+                    return
                 source_to.delete(path)
         else: # file to copy
+            if len(versions2) == 0 or versions2[-1] == [False]:
+                if not self.confirm_copy(source_from, source_to, path):
+                    return
+            else:
+                if not self.confirm_replace(source_from, source_to, path):
+                    return
             tmp = path + BISYNC_SUFFIX
             source_to.copy_to(source_from.get_local_name(path), tmp)
             source_to.rename(tmp, path)
 
         self.merge_versions(source_from, source_to, path)
+
+    def confirm_copy(self, source_from, source_to, path):
+        return True
+
+    def confirm_delete(self, source_from, source_to, path):
+        return True
+
+    def confirm_replace(self, source_from, source_to, path):
+        return True
 
     def merge_versions(self, source_from, source_to, path):
         # in case of conflict, versions on top of source_from
@@ -215,6 +238,7 @@ class Synchronizer:
         source_to.index[path] = [] + n_versions
 
     def resolve_conflict(self, f1, f2, file_):
+        # automatic conflict resolution, takes the last modified file
         versions1 = f1.index[file_]
         versions2 = f2.index[file_]
         if versions1[-1][0] == False:
@@ -261,16 +285,84 @@ class Synchronizer:
                 index[i[0]] = i[1:]
         return index
         
+class CmdSynchronizer(Synchronizer):
+    def __init__(self, args):
+        self.args = args
+
+    def get_file_desc(self, source, path):
+        last = source.index.get(path, [[False]])[-1]
+        if last[0] == True:
+            return "%s %s (%.1f kb, last modif: %s)" % (source.get_name(), path,
+                last[1] / 1000., str(datetime.datetime.fromtimestamp(last[2])))
+        else:
+            return "%s %s" % (source.get_name(), path)
+
+    def confirm_copy(self, source_from, source_to, path):
+        if self.args.auto:
+            return True
+        print "File copy"
+        print "From: %s" % self.get_file_desc(source_from, path)
+        print "To: %s" % self.get_file_desc(source_to, path)
+        result = (raw_input("Confirm ? ([Y]es, [n]o) ").strip() or " ")[0].lower()
+        if result == "n":
+            return False
+        else:
+            return True
+
+    def confirm_delete(self, source_from, source_to, path):
+        if self.args.auto:
+            return True
+        print "File delete"
+        print "In: %s" % self.get_file_desc(source_to, path)
+        result = (raw_input("Confirm ? ([Y]es, [n]o) ").strip() or " ")[0].lower()
+        if result == "n":
+            return False
+        else:
+            return True
+
+    def confirm_replace(self, source_from, source_to, path):
+        if self.args.auto:
+            return True
+        print "File overwrite"
+        print "From: %s" % self.get_file_desc(source_from, path)
+        print "To: %s" % self.get_file_desc(source_to, path)
+        result = (raw_input("Confirm ? ([Y]es, [n]o) ").strip() or " ")[0].lower()
+        if result == "n":
+            return False
+        else:
+            return True
+
+    def resolve_conflict(self, f1, f2, path):
+        ans = super(CmdSynchronizer, self).resolve_conflict(f1, f2, path)
+        if self.args.full_auto:
+            return ans
+        print "Conflict!"
+        print "Left: %s" % self.get_file_desc(f1, path)
+        print "Right: %s" % self.get_file_desc(f2, path)
+        if ans == 1:
+            result = (raw_input("Which one ? ([L]eft, [r]ight) ").strip() or " ")[0].lower()
+            if result == "r":
+                ans = 2
+        else:
+            result = (raw_input("Which one ? ([l]eft, [R]ight) ").strip() or " ")[0].lower()
+            if result == "l":
+                ans = 1
+        return ans
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Synchronize two folders.')
     parser.add_argument('folders', metavar='folders', type=str, nargs='+',
-                       help='folders')
-    parser.add_argument("--simulation", help="Only output operations", action="store_true")
+                       help='Folders to synchronize')
+    parser.add_argument("-s", "--simulation", help="Only output operations", action="store_true")
+    parser.add_argument("-a", "--auto", help="Does not confirm file transfers", action="store_true")
+    parser.add_argument("-f", "--full-auto", help="Does not confirm file transfers" +
+        " and resolve conflicts automatically", action="store_true")
 
     args = parser.parse_args()
+    if args.full_auto:
+        args.auto = True
 
-    sync = Synchronizer()
+    sync = CmdSynchronizer(args)
 
     if not args.simulation:
         sources = [FileSystemSource(x) for x in args.folders]
