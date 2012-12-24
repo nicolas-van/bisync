@@ -12,8 +12,8 @@ like the typical case of a mp3 collection, it's hundred times faster and won't u
 
 To test it:
 
-```sudo pip install bisync
-bisync folder1 folder2```
+    sudo pip install bisync
+    bisync folder1 folder2
 
 
 ###Changelog:
