@@ -20,7 +20,7 @@ To test it:
 For the upcoming questions:
 
 ####Why is it better than rsync?
-Because bisync is bidirectional and rsync can't track deletion, rename nor changes on the two sides.
+Because bisync is bidirectional and rsync can't track deletions, renames nor changes on the two sides.
 
 ####Why is it better than unison?
 Because unison is centralized, which mean you have to always use the same computer to make the synchronisation. I can't
