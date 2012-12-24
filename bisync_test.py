@@ -1,4 +1,4 @@
-import bisync
+import bisync_lib as bisync
 import json
 import unittest
 

@@ -362,7 +362,7 @@ class CmdSynchronizer(Synchronizer):
                 ans = 1
         return ans
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description='Synchronize two folders.')
     parser.add_argument('folders', metavar='folders', type=str, nargs='+',
                        help='Folders to synchronize')
