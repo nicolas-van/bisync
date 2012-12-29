@@ -316,7 +316,7 @@ class Synchronizer(object):
 class CmdSynchronizer(Synchronizer):
     def __init__(self, cmd_args, **kwargs):
         super(CmdSynchronizer, self).__init__(**kwargs)
-        self.args = args
+        self.args = cmd_args
 
     def get_file_desc(self, source, path):
         last = source.index.get(path, [[False]])[-1]
