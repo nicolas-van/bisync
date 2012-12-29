@@ -75,7 +75,8 @@ class Source(object):
 
     def rename(self, from_, to):
         """ Rename a file. If the destination file exists, overwrite it. If the destination file is
-        in a folder that does not exists, that folder must be implicitly created. """
+        in a folder that does not exists, that folder must be implicitly created. After file has been deleted,
+        if the containing folder is empty, the folder should be removed."""
         pass
 
     def delete(self, path):
@@ -126,12 +127,16 @@ class FileSystemSource(Source):
         self.delete(to)
         self._ensure_dir(os.path.join(self.path, to))
         shutil.move(os.path.join(self.path, from_), os.path.join(self.path, to))
+        try:
+            os.removedirs(os.path.dirname(os.path.join(self.path, from_)))
+        except:
+            pass # do nothing
 
     def delete(self, path):
         if os.path.exists(os.path.join(self.path, path)):
             os.remove(os.path.join(self.path, path))
         try:
-            os.removedirs(os.path.dirname(os.path.joind(self.path, path)))
+            os.removedirs(os.path.dirname(os.path.join(self.path, path)))
         except:
             pass # do nothing
 
