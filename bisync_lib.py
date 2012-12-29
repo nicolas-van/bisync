@@ -95,7 +95,7 @@ class FileSystemSource(Source):
     def walk(self):
         for folder in os.walk(self.path):
             for file_ in folder[2]:
-                path = os.path.relpath(os.path.join(folder[0], file_), self.path)
+                path = os.path.relpath(os.path.join(unicode(folder[0]), unicode(file_)), self.path)
                 stat = os.stat(os.path.join(self.path, path))
                 yield [path, stat.st_size, int(stat.st_mtime)]
 
@@ -103,12 +103,12 @@ class FileSystemSource(Source):
         return os.path.exists(os.path.join(self.path, path))
 
     def read_memory(self, path):
-        with open(os.path.join(self.path, path), "r") as file_:
+        with open(os.path.join(self.path, path), "rb") as file_:
             return file_.read()
 
     def write_memory(self, path, content):
         self._ensure_dir(os.path.join(self.path, path))
-        with open(os.path.join(self.path, path), "w") as file_:
+        with open(os.path.join(self.path, path), "wb") as file_:
             return file_.write(content)
 
     def _ensure_dir(self, path):
@@ -246,7 +246,7 @@ class Synchronizer(object):
         i = 0
         j = 0
         n_versions = []
-        while j < len(versions2):
+        while i < len(versions1) and j < len(versions2):
             if versions1[i] == versions2[j]:
                 n_versions += versions2[last_common_j + 1:j]
                 n_versions += versions1[last_common_i + 1:i]
@@ -283,8 +283,8 @@ class Synchronizer(object):
         p_index = {}
         if source.exists(BISYNC_INDEX):
             content = source.read_memory(BISYNC_INDEX)
-            p_index = json.loads(content)
-                    
+            p_index = json.loads(content.decode("utf8"))
+        
         for file_ in p_index.keys():
             if file_ not in c_index and p_index[file_][-1][0] == True: # file was deleted
                 p_index[file_].append([False])
@@ -303,6 +303,8 @@ class Synchronizer(object):
 
     def save_index(self, source):
         json_ = json.dumps(source.index)
+        json_ = unicode(json_)
+        json_ = json_.encode("utf8")
         source.write_memory(BISYNC_INDEX + BISYNC_SUFFIX, json_)
         source.rename(BISYNC_INDEX + BISYNC_SUFFIX, BISYNC_INDEX)
 
@@ -398,7 +400,7 @@ def main():
     sync = CmdSynchronizer(args, no_trash=args.no_trash)
 
     if not args.simulation:
-        sources = [FileSystemSource(x) for x in args.folders]
+        sources = [FileSystemSource(unicode(x)) for x in args.folders]
     else:
         sources = [FileSystemSimulationSource(x) for x in args.folders]
     sync.synchronize_all(sources)
