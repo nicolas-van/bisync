@@ -1,7 +1,7 @@
 Bisync
 ======
 
-A distributed bidirectional folder synchronizer.
+A bidirectional folder synchronizer with distributed history.
 
 I created this program mainly to handle a large music collection, but it could also be useful for lot of other uses.
 Basically, it keeps an history of file versions in each separate folders, which allows it to detect file deletion,
@@ -25,9 +25,10 @@ For the upcoming questions:
 Because bisync is bidirectional and rsync can't track deletions, renames nor changes on the two sides.
 
 ####Why is it better than unison?
-Because unison is centralized, which mean you have to always use the same computer to make the synchronisation. I can't
-help but think it's super boring, because today a lot of people have more than 2 computers (desktop + laptop + tablet +
-smartphone + working pc + grandma's pc, etc...). It's also really boring to configure.
+Because unison uses a centralized history, which means you have to always use the same computer to make
+the synchronisation. I can't help but think it's super boring, because today a lot of people have more
+than 2 computers (desktop + laptop + tablet + smartphone + working pc + grandma's pc, etc...). Unison is also
+really boring to configure.
 
 ####Why is it better than git/mercurial?
 Because those are *real* DVCS, they keep a copy of each file versions, they create diffs, they compute hashs of files...
