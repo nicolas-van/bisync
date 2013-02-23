@@ -41,5 +41,7 @@ history, which is a problem for code, not for mp3.
 Go check how much it cost to host 200G on Dropbox and you'll know. Bisync is GPL.
 
 ###Changelog:
+- 0.8.2:
+  - Solved some small bugs
 - 0.8.0:
   - First released version

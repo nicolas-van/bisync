@@ -4,7 +4,7 @@ from distutils.core import setup
 import os.path
 
 setup(name='bisync',
-      version='0.8.1',
+      version='0.8.2',
       description='Bisync',
       author='Nicolas Vanhoren',
       author_email='nicolas.vanhoren@unknown.com',
