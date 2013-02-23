@@ -57,11 +57,11 @@ class Source(object):
         pass
 
     def read_memory(self, path):
-        """ Returns the content of the file in a string. """
+        """ Returns the content of the file in a bytes object. """
         pass
 
     def write_memory(self, path, content):
-        """ Write content (as a string) to a file. If the file is contained in a folder or subfolder,
+        """ Write content (as a bytes object) to a file. If the file is contained in a folder or subfolder,
         all those folders must be implicitly created. """
         pass
 
@@ -96,7 +96,7 @@ class FileSystemSource(Source):
     def walk(self):
         for folder in os.walk(self.path):
             for file_ in folder[2]:
-                path = os.path.relpath(os.path.join(unicode(folder[0]), unicode(file_)), self.path)
+                path = os.path.relpath(os.path.join(str(folder[0]), str(file_)), self.path)
                 stat = os.stat(os.path.join(self.path, path))
                 yield [path, stat.st_size, int(stat.st_mtime)]
 
@@ -148,14 +148,14 @@ class FileSystemSimulationSource(FileSystemSource):
         pass
 
     def copy_to(self, local_file, dest_file):
-        print "Copy %s to %s" % (local_file,
-            os.path.join(self.path, dest_file[0:- len(BISYNC_SUFFIX)]))
+        print("Copy %s to %s" % (local_file,
+            os.path.join(self.path, dest_file[0:- len(BISYNC_SUFFIX)])))
 
     def rename(self, from_, to):
         pass
 
     def delete(self, path):
-        print "Delete %s" % os.path.join(self.path, path)
+        print("Delete %s" % os.path.join(self.path, path))
 
 class Synchronizer(object):
     def __init__(self, no_trash=False):
@@ -164,8 +164,8 @@ class Synchronizer(object):
     def synchronize_all(self, folders):
         for x in folders:
             self.build_index(x)
-        for i in xrange(len(folders)):
-            for j in xrange(i, len(folders)):
+        for i in range(len(folders)):
+            for j in range(i, len(folders)):
                 self.sync(folders[i], folders[j])
         for x in folders:
             self.save_index(x)
@@ -290,11 +290,11 @@ class Synchronizer(object):
             content = source.read_memory(BISYNC_INDEX)
             p_index = json.loads(content.decode("utf8"))
         
-        for file_ in p_index.keys():
+        for file_ in list(p_index.keys()):
             if file_ not in c_index and p_index[file_][-1][0] == True: # file was deleted
                 p_index[file_].append([False])
 
-        for file_ in c_index.keys():
+        for file_ in list(c_index.keys()):
             if file_ not in p_index: # new file
                 p_index[file_] = [[True] + c_index[file_]]
             else:
@@ -308,7 +308,7 @@ class Synchronizer(object):
 
     def save_index(self, source):
         json_ = json.dumps(source.index)
-        json_ = unicode(json_)
+        json_ = str(json_)
         json_ = json_.encode("utf8")
         source.write_memory(BISYNC_INDEX + BISYNC_SUFFIX, json_)
         source.rename(BISYNC_INDEX + BISYNC_SUFFIX, BISYNC_INDEX)
@@ -336,10 +336,10 @@ class CmdSynchronizer(Synchronizer):
     def confirm_copy(self, source_from, source_to, path):
         if self.args.auto:
             return True
-        print "File copy"
-        print "From: %s" % self.get_file_desc(source_from, path)
-        print "To: %s" % self.get_file_desc(source_to, path)
-        result = (raw_input("Confirm ? ([Y]es, [n]o) ").strip() or " ")[0].lower()
+        print("File copy")
+        print("From: %s" % self.get_file_desc(source_from, path))
+        print("To: %s" % self.get_file_desc(source_to, path))
+        result = (input("Confirm ? ([Y]es, [n]o) ").strip() or " ")[0].lower()
         if result == "n":
             return False
         else:
@@ -348,9 +348,9 @@ class CmdSynchronizer(Synchronizer):
     def confirm_delete(self, source_from, source_to, path):
         if self.args.auto:
             return True
-        print "File delete"
-        print "In: %s" % self.get_file_desc(source_to, path)
-        result = (raw_input("Confirm ? ([Y]es, [n]o) ").strip() or " ")[0].lower()
+        print("File delete")
+        print("In: %s" % self.get_file_desc(source_to, path))
+        result = (input("Confirm ? ([Y]es, [n]o) ").strip() or " ")[0].lower()
         if result == "n":
             return False
         else:
@@ -359,10 +359,10 @@ class CmdSynchronizer(Synchronizer):
     def confirm_replace(self, source_from, source_to, path):
         if self.args.auto:
             return True
-        print "File overwrite"
-        print "From: %s" % self.get_file_desc(source_from, path)
-        print "To: %s" % self.get_file_desc(source_to, path)
-        result = (raw_input("Confirm ? ([Y]es, [n]o) ").strip() or " ")[0].lower()
+        print("File overwrite")
+        print("From: %s" % self.get_file_desc(source_from, path))
+        print("To: %s" % self.get_file_desc(source_to, path))
+        result = (input("Confirm ? ([Y]es, [n]o) ").strip() or " ")[0].lower()
         if result == "n":
             return False
         else:
@@ -372,15 +372,15 @@ class CmdSynchronizer(Synchronizer):
         ans = super(CmdSynchronizer, self).resolve_conflict(f1, f2, path)
         if self.args.full_auto:
             return ans
-        print "Conflict!"
-        print "Left: %s" % self.get_file_desc(f1, path)
-        print "Right: %s" % self.get_file_desc(f2, path)
+        print("Conflict!")
+        print("Left: %s" % self.get_file_desc(f1, path))
+        print("Right: %s" % self.get_file_desc(f2, path))
         if ans == 1:
-            result = (raw_input("Which one ? ([L]eft, [r]ight) ").strip() or " ")[0].lower()
+            result = (input("Which one ? ([L]eft, [r]ight) ").strip() or " ")[0].lower()
             if result == "r":
                 ans = 2
         else:
-            result = (raw_input("Which one ? ([l]eft, [R]ight) ").strip() or " ")[0].lower()
+            result = (input("Which one ? ([l]eft, [R]ight) ").strip() or " ")[0].lower()
             if result == "l":
                 ans = 1
         return ans
@@ -405,7 +405,7 @@ def main():
     sync = CmdSynchronizer(args, no_trash=args.no_trash)
 
     if not args.simulation:
-        sources = [FileSystemSource(unicode(x)) for x in args.folders]
+        sources = [FileSystemSource(str(x)) for x in args.folders]
     else:
         sources = [FileSystemSimulationSource(x) for x in args.folders]
     sync.synchronize_all(sources)

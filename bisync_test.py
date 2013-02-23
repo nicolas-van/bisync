@@ -9,7 +9,7 @@ class TestSource(bisync.Source):
         self.nbr_delete = 0
 
     def walk(self):
-        for file_ in self.test_index.keys():
+        for file_ in list(self.test_index.keys()):
             last = self.test_index[file_][-1]
             if last[0] == True:
                 yield [file_, last[1], last[2]]
@@ -23,7 +23,7 @@ class TestSource(bisync.Source):
             return False
 
     def read_memory(self, path):
-        return json.dumps(self.test_index)
+        return json.dumps(self.test_index).encode("utf8")
 
     def write_memory(self, path, content):
         pass
